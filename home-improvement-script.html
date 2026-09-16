@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Improvement Script</title>
+    <style>
+        :root {
+            --primary: #2f66ff;
+            --secondary: #1f4dcc;
+            --bg-light: #101522;
+            --sidebar-bg: #151d31;
+            --text-dark: #f4f7ff;
+            --text-soft: #d5ddf7;
+            --border: rgba(180, 198, 235, 0.28);
+            --card-bg: #121a2c;
+            --base-font: 24px;
+            --line-height: 1.95;
+        }
+
+        body {
+            margin: 0;
+            font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+            font-size: var(--base-font);
+            line-height: var(--line-height);
+            display: flex;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+
+        body.login-locked #leftbar,
+        body.login-locked #sidebar,
+        body.login-locked #main {
+            filter: blur(12px);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(11, 15, 20, 0.56);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 9999;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #loginOverlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .login-panel {
+            width: min(92vw, 420px);
+            padding: 28px 24px 20px;
+            border-radius: 18px;
+            background: rgba(20, 27, 38, 0.94);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        .login-panel h2 {
+            margin: 0 0 14px;
+            color: #f2f6ff;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .login-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            color: #dfe7ff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .login-field input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(171, 192, 255, 0.25);
+            background: rgba(255, 255, 255, 0.05);
+            color: #f7f9ff;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .login-field input:focus {
+            border-color: rgba(96, 170, 255, 0.8);
+            box-shadow: 0 0 0 3px rgba(96, 170, 255, 0.18);
+        }
+
+        .login-button {
+            width: 100%;
+            margin: 0;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(113, 168, 255, 0.4);
+            background: linear-gradient(135deg, #2f66ff, #1c48c9);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .login-button:hover {
+            background: linear-gradient(135deg, #447dff, #234fc9);
+        }
+
+        #loginError {
+            min-height: 20px;
+            margin-top: 12px;
+            color: #ff9aa3;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #sidebar,
+        #leftbar {
+            position: fixed;
+            top: 0;
+            width: 240px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-top: 18px;
+            box-sizing: border-box;
+            z-index: 100;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #2f4f87 transparent;
+        }
+
+        #sidebar {
+            right: 0;
+            border-left: 1px solid var(--border);
+        }
+
+        #leftbar {
+            left: 0;
+            border-right: 1px solid var(--border);
+        }
+
+        button {
+            margin: 6px 12px;
+            padding: 15px 14px;
+            border: 1px solid rgba(145, 171, 232, 0.34);
+            border-radius: 11px;
+            background: #1a2744;
+            color: #e8eeff;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: "Manrope", "IBM Plex Sans", sans-serif;
+            letter-spacing: 0.01em;
+        }
+
+        .lang-toggle {
+            background: linear-gradient(135deg, #d62828, #a31212);
+            border-color: rgba(255, 166, 166, 0.7);
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .lang-toggle:hover {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-color: rgba(255, 214, 214, 0.9);
+        }
+
+        button:hover {
+            background: #21345e;
+            transform: translateY(-1px);
+            color: #fff;
+            border-color: rgba(155, 219, 255, 0.7);
+            box-shadow: 0 6px 16px rgba(4, 13, 33, 0.55);
+        }
+
+        button.active {
+            background: #245fd6;
+            border-color: #67e8f9;
+            box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.3), 0 8px 20px rgba(4, 13, 33, 0.65);
+        }
+
+        button:focus-visible {
+            outline: 2px solid #57d1ff;
+            outline-offset: 2px;
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #main {
+            flex: 1;
+            padding: 82px 34px 34px;
+            margin-right: 240px;
+            margin-left: 240px;
+            overflow-y: auto;
+        }
+
+        .page-toggle {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            z-index: 200;
+            margin: 0;
+            transform: translateX(-50%);
+            background: #f2b84b;
+            border-color: #ffe1a0;
+            color: #20170a;
+            white-space: nowrap;
+        }
+
+        .page-toggle:hover {
+            background: #ffd166;
+            color: #20170a;
+            transform: translateX(-50%) translateY(-1px);
+        }
+
+        #content {
+            max-width: 820px;
+            line-height: 2;
+            white-space: pre-wrap;
+            font-size: 1.35rem;
+            font-weight: 550;
+            letter-spacing: 0.01em;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 34px 38px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+        }
+
+        .subheading {
+            color: #9fcbff;
+            font-family: "Manrope", "IBM Plex Sans", sans-serif;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            text-transform: none;
+            font-size: 1.05rem;
+        }
+
+        .said-line {
+            color: var(--text-dark);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .meta-line {
+            color: #ffe2a8;
+            font-weight: 700;
+            display: block;
+            margin: 8px 0;
+            padding: 6px 10px;
+            background: rgba(255, 214, 130, 0.12);
+            border-left: 4px solid #ffd06b;
+            border-radius: 8px;
+        }
+
+        #content p {
+            margin: 0;
+            color: var(--text-soft);
+        }
+
+        #sidebar::-webkit-scrollbar,
+        #leftbar::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb,
+        #leftbar::-webkit-scrollbar-thumb {
+            background: rgba(94, 140, 221, 0.6);
+            border-radius: 999px;
+        }
+
+        #sidebar::-webkit-scrollbar-track,
+        #leftbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        @media (max-width: 900px) {
+            :root {
+                --base-font: 20px;
+            }
+
+            #sidebar,
+            #leftbar {
+                width: 185px;
+            }
+
+            #main {
+                padding: 20px 14px;
+                margin-right: 185px;
+                margin-left: 185px;
+            }
+
+            #content {
+                font-size: 1.1rem;
+                line-height: 1.9;
+                padding: 18px 16px;
+            }
+
+            button {
+                font-size: 15px;
+                padding: 12px 12px;
+            }
+        }
+
+        :root {
+            --primary: #b85c45;
+            --secondary: #934633;
+            --bg-light: #f4efe8;
+            --sidebar-bg: rgba(255, 251, 246, 0.88);
+            --text-dark: #263239;
+            --text-soft: #4b5a5e;
+            --border: rgba(65, 78, 80, 0.16);
+            --card-bg: rgba(255, 253, 249, 0.94);
+            --sage: #58786e;
+            --shadow-soft: 0 18px 48px rgba(76, 58, 46, 0.12);
+        }
+
+        body {
+            background:
+                linear-gradient(115deg, rgba(184, 92, 69, 0.06), transparent 32%),
+                linear-gradient(295deg, rgba(88, 120, 110, 0.07), transparent 38%),
+                var(--bg-light);
+            color: var(--text-dark);
+            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+            font-size: 19px;
+            line-height: 1.75;
+        }
+
+        #sidebar,
+        #leftbar {
+            width: 258px;
+            padding: 24px 16px;
+            background: var(--sidebar-bg);
+            border-color: var(--border);
+            box-shadow: 0 8px 30px rgba(76, 58, 46, 0.08);
+        }
+
+        #leftbar,
+        #sidebar {
+            gap: 4px;
+        }
+
+        #main {
+            margin-right: 258px;
+            margin-left: 258px;
+            padding: 78px 48px 48px;
+        }
+
+        button {
+            margin: 5px 0;
+            padding: 14px 16px;
+            border: 1px solid rgba(88, 120, 110, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.62);
+            color: var(--text-dark);
+            font-family: "Manrope", "IBM Plex Sans", sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: 0;
+            box-shadow: 0 4px 12px rgba(76, 58, 46, 0.04);
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            background: #fff;
+            color: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(76, 58, 46, 0.1);
+        }
+
+        button.active {
+            background: var(--sage);
+            border-color: var(--sage);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(88, 120, 110, 0.24);
+        }
+
+        button:focus-visible {
+            outline: 3px solid rgba(184, 92, 69, 0.4);
+            outline-offset: 3px;
+        }
+
+        .lang-toggle {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .lang-toggle:hover {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: #fff;
+        }
+
+        .page-toggle {
+            top: 18px;
+            padding: 12px 24px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(184, 92, 69, 0.25);
+            font-size: 16px;
+        }
+
+        .page-toggle:hover {
+            background: var(--secondary);
+            color: #fff;
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        #content {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 46px 52px;
+            background: var(--card-bg);
+            border: 1px solid rgba(65, 78, 80, 0.12);
+            border-radius: 22px;
+            box-shadow: var(--shadow-soft);
+            color: var(--text-soft);
+            font-size: 1.14rem;
+            line-height: 1.9;
+            letter-spacing: 0;
+        }
+
+        .subheading {
+            display: block;
+            margin-bottom: 22px;
+            color: var(--primary);
+            font-family: "Manrope", "IBM Plex Sans", sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1.25;
+            letter-spacing: 0;
+        }
+
+        .said-line,
+        .meta-line {
+            color: var(--text-soft);
+        }
+
+        #content>* {
+            animation: content-arrive 0.35s ease both;
+        }
+
+        @keyframes content-arrive {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #sidebar::-webkit-scrollbar-thumb,
+        #leftbar::-webkit-scrollbar-thumb {
+            background: rgba(88, 120, 110, 0.35);
+        }
+
+        @media (max-width: 900px) {
+
+            #sidebar,
+            #leftbar {
+                width: 204px;
+            }
+
+            #main {
+                margin-right: 204px;
+                margin-left: 204px;
+                padding: 74px 24px 32px;
+            }
+
+            #content {
+                padding: 34px 28px;
+                font-size: 1.05rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+            body {
+                display: block;
+                font-size: 17px;
+            }
+
+            #sidebar,
+            #leftbar {
+                position: sticky;
+                width: 100%;
+                height: auto;
+                max-height: 174px;
+                flex-direction: row;
+                align-items: center;
+                padding: 12px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            #leftbar {
+                top: 0;
+                z-index: 110;
+                padding-top: 58px;
+            }
+
+            #sidebar {
+                position: relative;
+                max-height: none;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            #main {
+                margin: 0;
+                padding: 24px 14px;
+            }
+
+            #content {
+                padding: 28px 22px;
+                border-radius: 16px;
+                font-size: 1rem;
+                line-height: 1.78;
+            }
+
+            button {
+                flex: 0 0 auto;
+                width: auto;
+                max-width: 220px;
+                font-size: 14px;
+            }
+
+            .page-toggle {
+                position: absolute;
+                top: 12px;
+                left: 50%;
+            }
+        }
+
+        /* Softer, more intimate finishing layer. */
+        :root {
+            --primary: #a9575e;
+            --secondary: #82434b;
+            --bg-light: #f7f2ec;
+            --sidebar-bg: rgba(250, 247, 242, 0.94);
+            --text-dark: #344247;
+            --text-soft: #59676a;
+            --border: rgba(82, 91, 88, 0.14);
+            --card-bg: rgba(255, 252, 247, 0.96);
+            --sage: #71877b;
+            --shadow-soft: 0 20px 54px rgba(93, 68, 60, 0.1);
+            --rail-width: 228px;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.8), transparent 46%),
+                linear-gradient(135deg, rgba(169, 87, 94, 0.035), transparent 42%),
+                var(--bg-light);
+            color: var(--text-dark);
+            font-family: "DM Sans", "IBM Plex Sans", sans-serif;
+            font-size: 18px;
+            line-height: 1.75;
+        }
+
+        #sidebar,
+        #leftbar {
+            width: var(--rail-width);
+            padding: 24px 14px;
+            background: var(--sidebar-bg);
+            border-color: var(--border);
+            box-shadow: 0 10px 32px rgba(93, 68, 60, 0.065);
+        }
+
+        #main {
+            margin-right: var(--rail-width);
+            margin-left: var(--rail-width);
+            padding: 76px 36px 42px;
+        }
+
+        button {
+            margin: 4px 0;
+            padding: 13px 15px;
+            border: 1px solid rgba(113, 135, 123, 0.18);
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.48);
+            color: var(--text-dark);
+            font-family: "DM Sans", "IBM Plex Sans", sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.35;
+            box-shadow: 0 3px 10px rgba(93, 68, 60, 0.025);
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--secondary);
+            transform: translateY(-1px);
+            box-shadow: 0 7px 16px rgba(93, 68, 60, 0.08);
+        }
+
+        button.active {
+            background: var(--sage);
+            border-color: var(--sage);
+            color: #fffdf9;
+            box-shadow: 0 7px 16px rgba(113, 135, 123, 0.2);
+        }
+
+        .lang-toggle {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fffdf9;
+        }
+
+        .lang-toggle:hover {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: #fffdf9;
+        }
+
+        .page-toggle {
+            top: 16px;
+            padding: 11px 23px;
+            background: var(--primary);
+            color: #fffdf9;
+            box-shadow: 0 9px 22px rgba(169, 87, 94, 0.2);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .page-toggle:hover {
+            background: var(--secondary);
+            color: #fffdf9;
+            transform: translateX(-50%) translateY(-1px);
+        }
+
+        #content {
+            max-width: 900px;
+            padding: 44px 48px;
+            background: var(--card-bg);
+            border: 1px solid rgba(82, 91, 88, 0.1);
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            color: var(--text-soft);
+            font-family: "DM Sans", "IBM Plex Sans", sans-serif;
+            font-size: 1.08rem;
+            font-weight: 400;
+            line-height: 1.84;
+        }
+
+        .subheading {
+            margin-bottom: 18px;
+            color: var(--primary);
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.05;
+        }
+
+        .said-line,
+        .meta-line {
+            color: var(--text-soft);
+            font-weight: 400;
+        }
+
+        .meta-line {
+            background: rgba(169, 87, 94, 0.07);
+            border-left-color: var(--primary);
+        }
+
+        #sidebar::-webkit-scrollbar-thumb,
+        #leftbar::-webkit-scrollbar-thumb {
+            background: rgba(113, 135, 123, 0.28);
+        }
+
+        @media (max-width: 900px) {
+
+            #sidebar,
+            #leftbar {
+                width: 204px;
+            }
+
+            #main {
+                margin-right: 204px;
+                margin-left: 204px;
+                padding: 74px 24px 32px;
+            }
+
+            #content {
+                padding: 34px 28px;
+                font-size: 1.04rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+
+            #sidebar,
+            #leftbar {
+                width: 100%;
+            }
+
+            #main {
+                margin: 0;
+                padding: 24px 14px;
+            }
+
+            #content {
+                padding: 30px 22px;
+                border-radius: 18px;
+                font-size: 1rem;
+            }
+
+            .subheading {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Final type scale: larger without adding visual strain. */
+        body {
+            font-size: 19.8px;
+            line-height: 1.8;
+        }
+
+        button {
+            font-size: 15.4px;
+            line-height: 1.4;
+        }
+
+        .page-toggle {
+            padding: 12px 25px;
+            font-size: 16.5px;
+        }
+
+        #content {
+            padding: 48px 52px;
+            font-size: 1.188rem;
+            line-height: 1.9;
+        }
+
+        .subheading {
+            margin-bottom: 22px;
+            font-size: 2.2rem;
+            line-height: 1.08;
+        }
+
+        @media (max-width: 900px) {
+            #content {
+                padding: 38px 30px;
+                font-size: 1.144rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+            body {
+                font-size: 18.7px;
+            }
+
+            #content {
+                padding: 32px 24px;
+                font-size: 1.1rem;
+                line-height: 1.84;
+            }
+
+            .subheading {
+                font-size: 1.98rem;
+            }
+
+            button {
+                font-size: 15.4px;
+            }
+        }
+
+        #content>* {
+            animation: content-arrive-soft 0.25s ease both;
+        }
+
+        @keyframes content-arrive-soft {
+            from {
+                transform: translateY(4px);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* Signature product layer: an editorial control room for the script. */
+        :root {
+            --ink: #304046;
+            --ink-muted: #708083;
+            --paper: #fcf9f4;
+            --paper-deep: #eee6dc;
+            --rose: #a9575e;
+            --rose-deep: #7f3e47;
+            --moss: #71877b;
+            --moss-deep: #526c60;
+            --line: rgba(48, 64, 70, 0.13);
+            --rail-width: 232px;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            background-image:
+                linear-gradient(rgba(113, 135, 123, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(113, 135, 123, 0.045) 1px, transparent 1px),
+                linear-gradient(135deg, rgba(169, 87, 94, 0.035), transparent 42%);
+            background-size: 48px 48px, 48px 48px, auto;
+        }
+
+        #leftbar,
+        #sidebar {
+            width: var(--rail-width);
+            padding: 78px 16px 24px;
+            background: rgba(249, 246, 241, 0.92);
+            border-color: var(--line);
+            box-shadow: 0 14px 36px rgba(76, 58, 46, 0.075);
+        }
+
+        #leftbar::before,
+        #sidebar::before {
+            position: absolute;
+            top: 28px;
+            left: 18px;
+            color: var(--ink-muted);
+            content: "";
+            font-family: "DM Sans", sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+        }
+
+        #leftbar::before {
+            content: "CALL GUIDE";
+        }
+
+        #sidebar::before {
+            content: "RESPONSES";
+        }
+
+        #leftbar::after,
+        #sidebar::after {
+            position: absolute;
+            top: 47px;
+            left: 18px;
+            width: 42px;
+            height: 2px;
+            background: var(--rose);
+            content: "";
+        }
+
+        #main {
+            position: relative;
+            isolation: isolate;
+            margin-right: var(--rail-width);
+            margin-left: var(--rail-width);
+            padding: 86px 40px 56px;
+        }
+
+        #main::before {
+            position: absolute;
+            top: 39px;
+            left: 40px;
+            color: var(--ink-muted);
+            content: "HOME IMPROVEMENT / FIELD SCRIPT";
+            font-family: "DM Sans", sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+        }
+
+        #main::after {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 34px;
+            height: 34px;
+            border-top: 1px solid rgba(169, 87, 94, 0.55);
+            border-right: 1px solid rgba(169, 87, 94, 0.55);
+            content: "";
+        }
+
+        button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 52px;
+            padding: 12px 13px;
+            border-color: rgba(113, 135, 123, 0.2);
+            border-radius: 14px;
+            background: rgba(255, 253, 249, 0.74);
+            color: var(--ink);
+            box-shadow: 0 4px 13px rgba(76, 58, 46, 0.035);
+        }
+
+        #leftbar {
+            counter-reset: guide-step;
+        }
+
+        #sidebar {
+            counter-reset: response-step;
+        }
+
+        #leftbar button[data-section]::before,
+        #sidebar button[data-section]::before {
+            flex: 0 0 auto;
+            color: var(--ink-muted);
+            font-family: "DM Sans", sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        #leftbar button[data-section] {
+            counter-increment: guide-step;
+        }
+
+        #leftbar button[data-section]::before {
+            content: counter(guide-step, decimal-leading-zero);
+        }
+
+        #sidebar button[data-section] {
+            counter-increment: response-step;
+        }
+
+        #sidebar button[data-section]::before {
+            content: counter(response-step, decimal-leading-zero);
+        }
+
+        button:hover {
+            border-color: rgba(169, 87, 94, 0.3);
+            background: rgba(255, 255, 255, 0.98);
+            color: var(--rose-deep);
+            transform: translateX(3px);
+            box-shadow: 0 8px 18px rgba(76, 58, 46, 0.08);
+        }
+
+        button.active {
+            border-color: var(--moss-deep);
+            background: var(--moss-deep);
+            color: #fffdf9;
+            box-shadow: 0 10px 22px rgba(82, 108, 96, 0.22);
+        }
+
+        button.active::before {
+            color: rgba(255, 253, 249, 0.7);
+        }
+
+        button.active::after {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #e7b486;
+            content: "";
+        }
+
+        .lang-toggle {
+            min-height: 46px;
+            background: var(--rose);
+            border-color: var(--rose);
+            color: #fffdf9;
+        }
+
+        .lang-toggle::before {
+            content: "Aa";
+            color: rgba(255, 253, 249, 0.7);
+            font-family: Georgia, serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .lang-toggle:hover {
+            background: var(--rose-deep);
+            border-color: var(--rose-deep);
+            color: #fffdf9;
+            transform: translateX(3px);
+        }
+
+        .page-toggle {
+            display: block;
+            min-height: 0;
+            padding: 13px 28px;
+            border: 1px solid rgba(169, 87, 94, 0.5);
+            border-radius: 999px;
+            background: var(--paper);
+            color: var(--rose-deep);
+            box-shadow: 0 10px 26px rgba(169, 87, 94, 0.16);
+            font-size: 16px;
+            letter-spacing: 0.04em;
+        }
+
+        .page-toggle::before,
+        .page-toggle::after {
+            display: none;
+        }
+
+        .page-toggle:hover {
+            background: var(--rose);
+            color: #fffdf9;
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        #content {
+            position: relative;
+            overflow: hidden;
+            max-width: 900px;
+            min-height: 430px;
+            padding: 56px 64px;
+            border: 1px solid rgba(82, 91, 88, 0.14);
+            border-radius: 30px;
+            background: rgba(255, 252, 247, 0.96);
+            box-shadow: 0 24px 60px rgba(76, 58, 46, 0.11);
+        }
+
+        #content::before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--rose), #d69b78 46%, var(--moss));
+            content: "";
+        }
+
+        #content::after {
+            position: absolute;
+            top: 26px;
+            right: 28px;
+            width: 74px;
+            height: 74px;
+            background-image:
+                linear-gradient(rgba(169, 87, 94, 0.13) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(169, 87, 94, 0.13) 1px, transparent 1px);
+            background-size: 12px 12px;
+            content: "";
+            opacity: 0.65;
+            pointer-events: none;
+        }
+
+        .subheading {
+            position: relative;
+            z-index: 1;
+            max-width: calc(100% - 90px);
+            margin-bottom: 28px;
+            color: var(--rose-deep);
+            font-size: 2.35rem;
+        }
+
+        .subheading::before {
+            display: block;
+            width: 28px;
+            height: 3px;
+            margin-bottom: 14px;
+            border-radius: 999px;
+            background: var(--rose);
+            content: "";
+        }
+
+        .said-line,
+        .meta-line {
+            position: relative;
+            z-index: 1;
+            max-width: 68ch;
+        }
+
+        @media (max-width: 900px) {
+
+            #leftbar,
+            #sidebar {
+                width: 204px;
+            }
+
+            #main {
+                margin-right: 204px;
+                margin-left: 204px;
+                padding: 78px 26px 36px;
+            }
+
+            #main::before {
+                left: 26px;
+            }
+
+            #main::after {
+                right: 26px;
+            }
+
+            #content {
+                padding: 46px 36px;
+            }
+        }
+
+        @media (max-width: 680px) {
+
+            #leftbar,
+            #sidebar {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                width: 100%;
+                max-height: none;
+                padding: 58px 12px 12px;
+                overflow: visible;
+            }
+
+            #sidebar {
+                padding-top: 48px;
+            }
+
+            #leftbar button,
+            #sidebar button {
+                width: auto;
+                min-width: 0;
+                max-width: none;
+                margin: 0;
+            }
+
+            #leftbar::before,
+            #sidebar::before {
+                top: 20px;
+                left: 14px;
+            }
+
+            #leftbar::after,
+            #sidebar::after {
+                top: 38px;
+                left: 14px;
+            }
+
+            #main {
+                margin: 0;
+                padding: 28px 14px;
+            }
+
+            #main::before,
+            #main::after {
+                display: none;
+            }
+
+            #content {
+                min-height: 360px;
+                padding: 42px 26px;
+                border-radius: 22px;
+            }
+
+            #content::after {
+                right: 20px;
+                width: 50px;
+                height: 50px;
+            }
+
+            .subheading {
+                max-width: calc(100% - 65px);
+                font-size: 2.05rem;
+            }
+        }
+
+        /* Nocturne skin: deep, warm and low-glare. */
+        :root {
+            --bg-light: #171a1c;
+            --sidebar-bg: rgba(29, 33, 35, 0.96);
+            --card-bg: #222729;
+            --text-dark: #e9e1d7;
+            --text-soft: #c0c4be;
+            --ink: #e9e1d7;
+            --ink-muted: #8f9996;
+            --paper: #292e30;
+            --paper-deep: #343a3b;
+            --rose: #c17a6a;
+            --rose-deep: #a96358;
+            --moss: #789488;
+            --moss-deep: #5f7e71;
+            --line: rgba(225, 215, 202, 0.14);
+            --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            background-color: var(--bg-light);
+            background-image:
+                radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.05), transparent 44%),
+                linear-gradient(rgba(225, 215, 202, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(225, 215, 202, 0.025) 1px, transparent 1px);
+            background-size: auto, 48px 48px, 48px 48px;
+            color: var(--text-dark);
+        }
+
+        #leftbar,
+        #sidebar {
+            background: var(--sidebar-bg);
+            border-color: var(--line);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+            scrollbar-color: #4c5b57 transparent;
+        }
+
+        #leftbar::before,
+        #sidebar::before {
+            color: #9da6a2;
+        }
+
+        #leftbar::after,
+        #sidebar::after {
+            background: var(--rose);
+        }
+
+        #main::before {
+            color: #8e9995;
+        }
+
+        #main::after {
+            border-color: rgba(193, 122, 106, 0.48);
+        }
+
+        button {
+            border-color: rgba(225, 215, 202, 0.11);
+            background: rgba(42, 48, 50, 0.82);
+            color: var(--text-dark);
+            box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
+        }
+
+        #leftbar button[data-section]::before,
+        #sidebar button[data-section]::before {
+            color: #94a09a;
+        }
+
+        button:hover {
+            border-color: rgba(193, 122, 106, 0.48);
+            background: #303739;
+            color: #f0d7cb;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        button.active {
+            border-color: var(--moss-deep);
+            background: var(--moss-deep);
+            color: #f2eee7;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+        }
+
+        .lang-toggle {
+            background: var(--rose-deep);
+            border-color: var(--rose-deep);
+            color: #f7eee8;
+        }
+
+        .lang-toggle:hover {
+            background: #b66d60;
+            border-color: #b66d60;
+            color: #fff8f1;
+        }
+
+        .page-toggle {
+            border-color: rgba(193, 122, 106, 0.62);
+            background: #242a2c;
+            color: #e5b3a3;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-toggle:hover {
+            background: var(--rose-deep);
+            color: #fff7f1;
+        }
+
+        #content {
+            border-color: rgba(225, 215, 202, 0.12);
+            background: rgba(34, 39, 41, 0.97);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        #content::before {
+            background: linear-gradient(90deg, var(--rose), #b58a72 46%, var(--moss));
+        }
+
+        #content::after {
+            background-image:
+                linear-gradient(rgba(193, 122, 106, 0.13) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(193, 122, 106, 0.13) 1px, transparent 1px);
+        }
+
+        .subheading {
+            color: #e0a38f;
+        }
+
+        .subheading::before {
+            background: var(--rose);
+        }
+
+        .said-line,
+        .meta-line {
+            color: var(--text-soft);
+        }
+
+        .meta-line {
+            background: rgba(193, 122, 106, 0.09);
+            border-left-color: var(--rose);
+        }
+
+        #sidebar::-webkit-scrollbar-thumb,
+        #leftbar::-webkit-scrollbar-thumb {
+            background: rgba(120, 148, 136, 0.42);
+        }
+
+        #sidebar::-webkit-scrollbar-track,
+        #leftbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        @media (max-width: 680px) {
+
+            #leftbar,
+            #sidebar {
+                background: rgba(29, 33, 35, 0.98);
+            }
+        }
+
+        /* Static-only art direction: a quiet luxury control room. */
+        :root {
+            --night: #111719;
+            --night-raised: #192124;
+            --night-panel: #202a2d;
+            --night-panel-soft: #253033;
+            --bone: #eee8df;
+            --bone-muted: #aeb9b4;
+            --copper: #c98470;
+            --copper-bright: #e1a18b;
+            --sage: #789789;
+            --sage-deep: #527267;
+            --hairline: rgba(238, 232, 223, 0.13);
+            --rail: 236px;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--night);
+            background-image:
+                radial-gradient(ellipse at 50% -15%, rgba(201, 132, 112, 0.1), transparent 40%),
+                linear-gradient(rgba(238, 232, 223, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(238, 232, 223, 0.025) 1px, transparent 1px);
+            background-size: auto, 56px 56px, 56px 56px;
+            color: var(--bone);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 18px;
+            line-height: 1.75;
+        }
+
+        #leftbar,
+        #sidebar {
+            width: var(--rail);
+            padding: 84px 15px 24px;
+            background: linear-gradient(180deg, rgba(25, 33, 36, 0.98), rgba(16, 22, 24, 0.98));
+            border-color: var(--hairline);
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.035), 0 0 45px rgba(0, 0, 0, 0.17);
+        }
+
+        #sidebar {
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.035), 0 0 45px rgba(0, 0, 0, 0.17);
+        }
+
+        #leftbar::before,
+        #sidebar::before {
+            top: 30px;
+            left: 18px;
+            color: #97a7a1;
+            font-family: "Segoe UI", sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.22em;
+        }
+
+        #leftbar::after,
+        #sidebar::after {
+            top: 50px;
+            left: 18px;
+            width: 38px;
+            height: 2px;
+            background: var(--copper);
+        }
+
+        #main {
+            position: relative;
+            isolation: isolate;
+            margin-right: var(--rail);
+            margin-left: var(--rail);
+            padding: 96px 44px 56px;
+        }
+
+        #main::before {
+            top: 42px;
+            left: 44px;
+            color: #80908c;
+            content: "UNIVERSAL HOME IMPROVEMENT  /  FIELD SCRIPT";
+            font-family: "Segoe UI", sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+        }
+
+        #main::after {
+            top: 42px;
+            right: 44px;
+            width: 42px;
+            height: 42px;
+            border-top: 1px solid rgba(201, 132, 112, 0.62);
+            border-right: 1px solid rgba(201, 132, 112, 0.62);
+        }
+
+        button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-height: 52px;
+            margin: 5px 0;
+            padding: 12px 14px;
+            overflow: hidden;
+            border: 1px solid rgba(238, 232, 223, 0.12);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(38, 49, 52, 0.95), rgba(29, 38, 41, 0.95));
+            color: var(--bone);
+            cursor: pointer;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.35;
+            letter-spacing: 0;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14), inset 0 1px rgba(255, 255, 255, 0.025);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #leftbar {
+            counter-reset: guide-step;
+        }
+
+        #sidebar {
+            counter-reset: response-step;
+        }
+
+        #leftbar button[data-section],
+        #sidebar button[data-section] {
+            counter-increment: guide-step;
+        }
+
+        #sidebar button[data-section] {
+            counter-increment: response-step;
+        }
+
+        #leftbar button[data-section]::before,
+        #sidebar button[data-section]::before {
+            flex: 0 0 20px;
+            color: #91a29d;
+            content: counter(guide-step, decimal-leading-zero);
+            font-family: "Segoe UI", sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        #sidebar button[data-section]::before {
+            content: counter(response-step, decimal-leading-zero);
+        }
+
+        button:hover {
+            transform: translateX(3px);
+            border-color: rgba(201, 132, 112, 0.5);
+            background: linear-gradient(135deg, #303c3f, #263235);
+            color: #f6d7ca;
+            box-shadow: 0 9px 20px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        button.active {
+            border-color: rgba(163, 197, 181, 0.52);
+            background: linear-gradient(135deg, #688d7d, #4d7064);
+            color: #f7f3ec;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.23), inset 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        button.active::after {
+            position: absolute;
+            top: 11px;
+            right: 11px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--copper-bright);
+            box-shadow: 0 0 0 4px rgba(225, 161, 139, 0.1);
+            content: "";
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--copper-bright);
+            outline-offset: 3px;
+        }
+
+        .lang-toggle {
+            min-height: 47px;
+            background: linear-gradient(135deg, #b97262, #99584f);
+            border-color: rgba(225, 161, 139, 0.4);
+            color: #fff5ef;
+        }
+
+        .lang-toggle::before {
+            flex-basis: auto;
+            color: rgba(255, 245, 239, 0.72);
+            content: "Aa";
+            font-family: Georgia, serif;
+            font-size: 16px;
+        }
+
+        .page-toggle {
+            display: block;
+            min-height: 0;
+            margin: 0;
+            padding: 13px 28px;
+            border: 1px solid rgba(201, 132, 112, 0.68);
+            border-radius: 999px;
+            background: linear-gradient(145deg, #2c383a, #1d272a);
+            color: #edb5a1;
+            font-family: Georgia, serif;
+            font-size: 17px;
+            letter-spacing: 0.04em;
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 12px 28px rgba(0, 0, 0, 0.24);
+        }
+
+        .page-toggle::before {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            margin-right: 9px;
+            border-radius: 50%;
+            background: var(--copper);
+            box-shadow: 0 0 0 4px rgba(201, 132, 112, 0.1);
+            content: "";
+            vertical-align: 2px;
+        }
+
+        .page-toggle:hover {
+            transform: translateX(-50%) translateY(-2px);
+            background: linear-gradient(145deg, #9a5d53, #784840);
+            color: #fff7f1;
+        }
+
+        #content {
+            position: relative;
+            overflow: hidden;
+            max-width: 920px;
+            min-height: 430px;
+            margin: 0 auto;
+            padding: 58px 66px;
+            border: 1px solid rgba(238, 232, 223, 0.15);
+            border-radius: 28px;
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.028), transparent 32%),
+                linear-gradient(315deg, rgba(120, 151, 137, 0.04), transparent 48%),
+                var(--night-panel);
+            color: var(--bone-muted);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 1.16rem;
+            font-weight: 400;
+            line-height: 1.9;
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 28px 70px rgba(0, 0, 0, 0.28);
+        }
+
+        #content::before {
+            height: 3px;
+            background: linear-gradient(90deg, var(--copper), #b99578 45%, var(--sage));
+        }
+
+        #content::after {
+            top: 28px;
+            right: 30px;
+            width: 78px;
+            height: 78px;
+            background-image:
+                linear-gradient(rgba(201, 132, 112, 0.14) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(201, 132, 112, 0.14) 1px, transparent 1px);
+            background-size: 13px 13px;
+            opacity: 0.45;
+        }
+
+        .subheading {
+            max-width: calc(100% - 100px);
+            margin-bottom: 28px;
+            color: var(--copper-bright);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 2.45rem;
+            font-weight: 700;
+            line-height: 1.08;
+            letter-spacing: -0.01em;
+            text-shadow: 0 0 26px rgba(201, 132, 112, 0.12);
+        }
+
+        .subheading::before {
+            width: 32px;
+            height: 3px;
+            margin-bottom: 15px;
+            background: var(--copper);
+        }
+
+        .said-line,
+        .meta-line {
+            max-width: 68ch;
+            color: var(--bone-muted);
+            font-weight: 400;
+        }
+
+        .meta-line {
+            background: rgba(201, 132, 112, 0.1);
+            border-left-color: var(--copper);
+            color: #e4c9bc;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb,
+        #leftbar::-webkit-scrollbar-thumb {
+            background: rgba(120, 151, 137, 0.4);
+        }
+
+        @media (max-width: 900px) {
+
+            #leftbar,
+            #sidebar {
+                width: 204px;
+            }
+
+            #main {
+                margin-right: 204px;
+                margin-left: 204px;
+                padding: 88px 24px 36px;
+            }
+
+            #main::before {
+                left: 24px;
+            }
+
+            #main::after {
+                right: 24px;
+            }
+
+            #content {
+                padding: 48px 38px;
+                font-size: 1.08rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+            body {
+                display: block;
+                font-size: 17px;
+            }
+
+            #leftbar,
+            #sidebar {
+                position: sticky;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                width: 100%;
+                height: auto;
+                max-height: none;
+                padding: 58px 12px 12px;
+                overflow: visible;
+                border: 0;
+                border-bottom: 1px solid var(--hairline);
+            }
+
+            #sidebar {
+                position: relative;
+                padding-top: 48px;
+            }
+
+            #leftbar button,
+            #sidebar button {
+                width: auto;
+                min-width: 0;
+                max-width: none;
+                margin: 0;
+            }
+
+            #leftbar::before,
+            #sidebar::before {
+                top: 20px;
+                left: 14px;
+            }
+
+            #leftbar::after,
+            #sidebar::after {
+                top: 38px;
+                left: 14px;
+            }
+
+            #main {
+                margin: 0;
+                padding: 28px 14px;
+            }
+
+            #main::before,
+            #main::after {
+                display: none;
+            }
+
+            #content {
+                min-height: 360px;
+                padding: 42px 26px;
+                border-radius: 22px;
+                font-size: 1.06rem;
+            }
+
+            #content::after {
+                right: 20px;
+                width: 54px;
+                height: 54px;
+            }
+
+            .subheading {
+                max-width: calc(100% - 70px);
+                font-size: 2.05rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="login-locked">
+    <div id="loginOverlay">
+        <div class="login-panel">
+            <h2>Acceso</h2>
+            <form id="loginForm">
+                <label class="login-field">
+                    Usuario
+                    <input id="usernameInput" type="text" value="Home improvemets" autocomplete="username" />
+                </label>
+                <label class="login-field">
+                    Contraseña
+                    <input id="passwordInput" type="password" placeholder="Introduce la contraseña"
+                        autocomplete="current-password" />
+                </label>
+                <button type="submit" class="login-button">Entrar</button>
+                <div id="loginError" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="leftbar">
+        <button id="pageToggle" class="page-toggle" type="button">California</button>
+        <button id="languageToggle" class="lang-toggle" type="button" data-lang-toggle="es">Español</button>
+        <button type="button" data-section="introductionVerification" data-california-section="intro">Introduction &
+            Verification</button>
+        <button type="button" data-section="programProjects" data-california-section="discover">Program &
+            Projects</button>
+        <button type="button" data-section="projectQualification" data-california-section="financing">Project
+            Qualification</button>
+        <button type="button" data-section="doorQualification" data-california-section="qualify">Door
+            Qualification</button>
+        <button type="button" data-section="programBenefits" data-california-section="appointment">Program
+            Benefits</button>
+        <button type="button" data-section="preQualificationIntro" data-california-section="confirm">Pre-Qualification
+            Intro</button>
+        <button type="button" data-section="homeownerVerification" data-california-section="unused">Homeowner
+            Verification</button>
+        <button type="button" data-section="appointmentScheduling" data-california-section="unused">Appointment
+            Scheduling</button>
+        <button type="button" data-section="nameVerification" data-california-section="unused">Name
+            Verification</button>
+    </div>
+
+    <div id="sidebar">
+        <button type="button" data-section="notInterested" data-california-section="expensive">Not Interested</button>
+        <button type="button" data-section="scamTrust" data-california-section="badTime">Scam / Trust</button>
+        <button type="button" data-section="cantAffordIt" data-california-section="talk">Can't Afford It</button>
+        <button type="button" data-section="tooBusy" data-california-section="notInterested">Too Busy / No Time</button>
+        <button type="button" data-section="alreadyHaveContractor" data-california-section="quotes">Already Have a
+            Contractor</button>
+        <button type="button" data-section="whoGaveMyNumber" data-california-section="unused">Who Gave You My
+            Number?</button>
+        <button type="button" data-section="alreadyTookCareOfIt" data-california-section="unused">Already Took Care of
+            It</button>
+    </div>
+
+    <div id="main">
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const VALID_USERNAME = ['home improvemets', 'home improvements'];
+        const VALID_PASSWORD = 'vR7#qL2!xP9@tM4$zK8';
+
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('usernameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginError = document.getElementById('loginError');
+
+        function setLoginState(isLocked) {
+            document.body.classList.toggle('login-locked', isLocked);
+            loginOverlay.classList.toggle('hidden', !isLocked);
+        }
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const isValidUser = VALID_USERNAME.includes(username.toLowerCase());
+            const isValidPassword = password === VALID_PASSWORD;
+
+            if (isValidUser && isValidPassword) {
+                setLoginState(false);
+                loginError.textContent = '';
+                passwordInput.value = '';
+                return;
+            }
+
+            loginError.textContent = 'Usuario o contraseña incorrectos.';
+            passwordInput.value = '';
+            passwordInput.focus();
+        });
+
+        setLoginState(true);
+        usernameInput.value = 'Home improvemets';
+        usernameInput.focus();
+
+        const languageState = { current: 'en' };
+
+        const scriptData = {
+            en: {
+                labels: {
+                    introductionVerification: 'Introduction & Verification',
+                    programProjects: 'Program & Projects',
+                    projectQualification: 'Project Qualification',
+                    doorQualification: 'Door Qualification',
+                    programBenefits: 'Program Benefits',
+                    preQualificationIntro: 'Pre-Qualification Intro',
+                    homeownerVerification: 'Homeowner Verification',
+                    appointmentScheduling: 'Appointment Scheduling',
+                    nameVerification: 'Name Verification',
+                    notInterested: 'Not Interested',
+                    scamTrust: 'Scam / Trust',
+                    cantAffordIt: "Can't Afford It",
+                    tooBusy: 'Too Busy / No Time',
+                    alreadyHaveContractor: 'Already Have a Contractor',
+                    whoGaveMyNumber: 'Who Gave You My Number?',
+                    alreadyTookCareOfIt: 'Already Took Care of It'
+                },
+                sections: {
+                    introductionVerification: `Hey, is this Ariel? Hi Ariel, how are you? My name is Manny, I'm calling on behalf of the city approved program for home renovations (City of the HO). I see that you live in an eligible zip code for this program's benefits, are you still on zipcode 33056? And are you still the owner for the address on 123 Main Street?`,
+                    programProjects: `Fantastic, fantastic. The reason for the call is that I see that there are some funds available in your zip code for renovations like Roofing, Impact windows, Doors, Bathroom and Kitchen. Are you interested in any projects? Roofing? Impact windows?
+
+PRIMARY PROJECTS:
+
+Roofing
+Windows & Doors
+HVAC / Air Conditioning
+Kitchen Remodeling
+Bathroom Remodeling
+Flooring
+Solar
+
+COMPLEMENTARY PROJECTS:
+
+Pavers
+Fencing
+Driveway
+Siding
+Plumbing
+Interior Painting
+Exterior Painting
+Room Remodeling`,
+                    projectQualification: `How many windows do you currently have at home?`,
+                    doorQualification: `Fantastic. Any sliding glass doors? Any French doors?`,
+                    programBenefits: `Amazing. Okay, so let me explain to you about the program's benefits just so we're on the same page. The program is not free, but it is helping out with three things for the projects mentioned: 0% Down Payment, 12-18 months until the first payment is due, and a bonus of up to $5000 to help you out for each project mentioned before.`,
+                    preQualificationIntro: `I'm just going to ask you 5 pre-qualification questions to see if you'll be eligible for the program on my side, okay?
+
+Are you current on your mortgage?
+
+Are you current on your last three years property taxes?
+
+Have you had any bankruptcy in the last 7 years?
+
+ANY foreclosure, or lien on the property?
+
+Is your credit score above 650?`,
+                    homeownerVerification: `Amazing. Okay, so on my side, you're basically pre-qualified. Ariel, are you the sole HO and DM for this property?
+
+Great, are you the only one on the title/deed?`,
+                    appointmentScheduling: `Great! Now all that's left is to set you a meeting with our coordinator. On my side, again, you're pre-qualified. So I have an AM and a PM appointment. Which works better for you?
+
+Okay, fantastic. I have you for (available slot on Calendly).`,
+                    nameVerification: `Alright, so just to confirm everything's right, I have here Ariel, last name (Say the last name on file), correct?
+
+And we'll be visiting you at 123 Main Street on (City that appears on file), do I have the address right?
+
+Great, the appointment will last about 60min and they'll be calling you in two hours before the appointment time to let you know their ETA (estimated time of arrival) or if they have any delays, is this phone number ending in 1234 the best one to give you a call back?
+
+Perfect, see you tomorrow at (set appointment time and date) Ariel, have a nice day!`,
+                    notInterested: `No worries at all! Just curious, is there a specific reason you're not interested in exploring options that could save you money?`,
+                    scamTrust: `That's a very fair question, Ariel. I completely understand. XYZ Company is an authorized facilitator for the program, and all the contractors we use are licensed, insured, and pre-vetted by the county for this specific initiative. Our coordinator will provide you with all the official documentation at the meeting, and you can verify the program details right on the county's website. The great part is, there's no obligation to proceed.`,
+                    cantAffordIt: `I appreciate that concern, and that's precisely why this program exists. It's not a standard loan. It uses your property's future energy savings to help offset the cost. You aren't asked to pay out-of-pocket, and you don't even know if you're approved or for how much yet! The 10 AM meeting is just to see the options and find out if you qualify for the lowest monthly payment possible, which might surprise you.`,
+                    tooBusy: `I hear you. Home improvements can be a hassle, but since these funds are first-come, first-served in your zip code, waiting could mean missing out entirely. The good news is the coordinator meeting only takes about 45 minutes, and it's free. If the numbers don't work for you, you walk away. If they do, you secure the limited funding. Which is a bigger priority: saving 45 minutes, or potentially saving thousands of dollars on a necessary home upgrade?`,
+                    alreadyHaveContractor: `That's great you have a relationship! However, to utilize these special county funds and secure the reduced pricing, we must use the platinum-approved contractors like Universal Home Improvement. They are the only ones authorized to handle the specific paperwork and compliance checks associated with this program. They are the best of the best, with great reviews, and they've already been approved to work with the limited funding available in zip code 33056.`,
+                    whoGaveMyNumber: `This is a county program for homeowners in [area], and you were listed as a potential beneficiary.`,
+                    alreadyTookCareOfIt: `Awesome! Would you mind sharing who you worked with? We partner with some great local companies and I'd love to make sure you're getting the best deal. It is always good to have a second opinion.`
+                }
+            },
+            es: {
+                labels: {
+                    introductionVerification: 'Introducción y Verificación',
+                    programProjects: 'Programa y Proyectos',
+                    projectQualification: 'Cantidad de Ventanas',
+                    doorQualification: 'Puertas',
+                    programBenefits: 'Beneficios del Programa',
+                    preQualificationIntro: 'Introducción Pre-Calificación',
+                    mortgageQualification: 'Hipoteca',
+                    propertyTaxQualification: 'Impuestos de Propiedad',
+                    bankruptcyQualification: 'Bancarrota',
+                    foreclosureLien: 'Foreclosure / Lien',
+                    creditScore: 'Puntaje de Crédito',
+                    homeownerVerification: 'Dueño y Tomador de Decisiones',
+                    appointmentScheduling: 'Programar la Cita',
+                    nameVerification: 'Verificar Nombre Completo',
+                    notInterested: 'No Interesado',
+                    scamTrust: 'Scam / Trust',
+                    cantAffordIt: 'Costo / Finanzas',
+                    tooBusy: 'Demasiado ocupado / sin tiempo',
+                    alreadyHaveContractor: 'Contrato propio',
+                    whoGaveMyNumber: '¿Quién te dio mi número?',
+                    alreadyTookCareOfIt: 'Ya lo hice'
+                },
+                sections: {
+                    introductionVerification: `Hola, ¿este es Ariel? Hola Ariel, ¿cómo está? Mi nombre es Manny, le llamo de parte del programa aprobado por el condado para renovaciones del hogar en (Condado o Ciudad). Veo que vive en un código postal elegible para los beneficios de este programa, ¿todavía se encuentra en el código 33056? ¿Y sigue siendo el dueño de la propiedad en 123 Main Street?`,
+                    programProjects: `Fantástico, fantástico. El motivo de mi llamada es porque veo que hay fondos disponibles en su código postal para el programa de renovaciones aprobado por el condado para Techos, Ventanas de Impacto, Puertas, Baños, Cocinas, Entradas (Driveways) y Cercas (Fences). Solo quería dejarle saber que los fondos son muy limitados, ya que este es un programa de alta demanda. ¿Le interesa alguno de esos proyectos? ¿Techo? ¿Ventanas de impacto?
+
+PRIMARY PROJECTS:
+
+Roofing
+Windows & Doors
+HVAC / Air Conditioning
+Kitchen Remodeling
+Bathroom Remodeling
+Flooring
+Solar
+
+COMPLEMENTARY PROJECTS:
+
+Pavers
+Fencing
+Driveway
+Siding
+Plumbing
+Interior Painting
+Exterior Painting
+Room Remodeling`,
+                    projectQualification: `¿Cuántas ventanas tiene actualmente en su casa?`,
+                    doorQualification: `Excelente. ¿Alguna puerta corrediza de vidrio? ¿Puertas francesas?`,
+                    programBenefits: `Increíble. Permítame explicarle los beneficios del programa para que estemos en la misma página. El programa del condado no es gratuito, pero está ayudando con tres cosas para los proyectos mencionados: 1. Pago Inicial de $0 (sin prima/downpayment). 2. De 12 a 18 meses antes de que tenga que realizar el primer pago. 3. Un bono de hasta $5,000 para ayudarle con cada proyecto. La cantidad exacta aprobada se determinará en la visita para su estimado.`,
+                    preQualificationIntro: `Le voy a hacer 5 preguntas de pre-calificación para ver si es elegible para el programa por mi parte, ¿está bien?
+
+¿Está al día con su hipoteca?
+
+¿Está al día con los impuestos sobre la propiedad de los últimos tres años?
+
+¿Ha tenido alguna bancarrota en los últimos 7 años?
+
+¿Alguna ejecución hipotecaria (foreclosure) o gravamen (lien) sobre la propiedad?
+
+¿Está su puntaje de crédito por encima de 650?`,
+                    homeownerVerification: `Muy bien. De mi parte, ya está precalificado. Ariel, ¿usted es el único dueño y tomador de decisiones de esta propiedad?
+
+¿Es usted el único en el título de la propiedad?`,
+                    appointmentScheduling: `Perfecto. El último paso es programar una visita con el coordinador del programa. Ellos le darán el presupuesto exacto y le explicarán todos los detalles financieros. ¿Qué le queda mejor, las mañanas o las tardes?
+
+Muy bien, fantástico. Lo tengo para las (Espacio disponible en Calendly). Permítame verificar quién es el contratista con seguro nivel platino en su área. (Pausa) ¡Vaya!, de hecho, veo que ‘Universal Home Improvement’ es el principal contratista de nivel platino en su zona. Los enviaremos junto con el coordinador del programa, ya que tienen excelentes reseñas de sus propios vecinos, ¿ok?`,
+                    nameVerification: `Muy bien, para confirmar que todo esté correcto, tengo aquí a Ariel, apellido (Decir apellido), ¿correcto?
+
+Y lo visitaremos en 123 Main Street en (Ciudad), ¿es correcta la dirección?
+
+Excelente, la cita durará entre 60 y 90 minutos. Le llamarán dos horas antes de las (Hora programada en Calendly) para avisarle su hora de llegada o si hay algún retraso. ¿Es este número terminado en 1234 el mejor para devolverle la llamada?
+
+¡Perfecto Ariel, nos vemos mañana a las 10 AM, que tenga un excelente día!`,
+                    notInterested: `¡No hay problema! Solo por curiosidad, ¿hay alguna razón específica por la cual no le interese conocer opciones que podrían ahorrarle una cantidad significativa de dinero en su hogar?`,
+                    scamTrust: `Es una pregunta muy válida, [Nombre]. Entiendo su cautela. XYZ Company es un facilitador autorizado para el programa; todos nuestros contratistas tienen licencia, seguro y están pre-aprobados por el condado. En nuestra reunión, el coordinador le entregará la documentación oficial y usted mismo puede verificar los detalles en la página web oficial del condado. Además, la consulta es totalmente informativa y sin compromiso.`,
+                    cantAffordIt: `Entiendo perfectamente, y es precisamente por eso que existe este programa. No es un préstamo bancario tradicional. Se utilizan los ahorros energéticos futuros de su propiedad para compensar el costo. No se le pide dinero de su bolsillo hoy y aún ni siquiera sabemos si califica para el pago mensual más bajo posible. La reunión es solo para ver sus opciones; los resultados podrían sorprenderle.`,
+                    tooBusy: `Lo comprendo, el tiempo es valioso. Sin embargo, como estos fondos se asignan por orden de llegada en su código postal, esperar podría significar perder la oportunidad. La reunión con el coordinador solo toma 45 minutos y es gratuita. Si los números no le convencen, simplemente no sigue adelante. ¿Qué es más prioritario: ahorrar 45 minutos hoy o potencialmente ahorrar miles de dólares en una mejora necesaria para su casa?`,
+                    alreadyHaveContractor: `¡Qué bueno que ya tenga a alguien de confianza! Sin embargo, para acceder a estos fondos especiales del condado y obtener los precios reducidos, debemos trabajar con contratistas certificados nivel “Platinum” como Universal Home Improvement. Ellos son los únicos autorizados para manejar el papeleo legal y las verificaciones de cumplimiento de este programa específico. Son los mejores evaluados en el área y ya están aprobados para trabajar con los fondos disponibles en el código postal 33056.`,
+                    whoGaveMyNumber: `Este es un programa del condado para propietarios de viviendas en [Área], y usted aparece en nuestra base de datos pública como un beneficiario potencial para estas subvenciones energéticas.`,
+                    alreadyTookCareOfIt: `¡Excelente! ¿Le importaría compartir con quién trabajó? Colaboramos con varias empresas locales y me encantaría asegurarme de que recibió el mejor trato posible. Siempre es bueno tener una segunda opinión sobre la garantía y el rendimiento.`
+                }
+            }
+        };
+
+        const californiaData = {
+            en: {
+                labels: {
+                    intro: '1. Intro + Curiosity', discover: '2. Discover the Project', financing: '3. Program + Financing',
+                    qualify: '4. Qualify', appointment: '5. Book the Appointment', confirm: '6. Confirm + Close',
+                    expensive: 'Too Expensive', badTime: 'Not a Good Time', talk: 'Need to Talk About It',
+                    notInterested: 'Not Interested', quotes: 'Want More Quotes'
+                },
+                sections: {
+                    intro: `Hi, Mr./Mrs. [Last Name]?\n\nHi, this is [Agent Name]. How are you doing today?\n\nI'm reaching out because we're currently helping homeowners in the Bay Area with home improvement projects.\n\nI noticed your home in ZIP [ZIP] is currently eligible for our Energy Efficiency Improvement Program.\n\nOur specialists are already working in your area, so I wanted to see if there's any home improvement project you've been thinking about.`,
+                    discover: `What part of your home would you most like to improve?\n\nWhat made you start thinking about that project?\n\nWhat issue are you currently having with it?\n\nWhat would you ideally like to get done?\n\nWhat are you hoping to accomplish with the project?\n\nHow long have you been considering it?\n\nAre you looking to have the project completed within the next 6 months?\n\nBesides that, are you considering any other major home improvement projects?\n\nPRIMARY PROJECTS:\n\nRoofing\nWindows & Doors\nHVAC / Air Conditioning\nKitchen Remodeling\nBathroom Remodeling\nFlooring\nSolar\nLandscaping\n\nCOMPLEMENTARY PROJECTS:\n\nPavers\nFencing\nDriveway\nSiding\nPlumbing\nInterior Painting\nExterior Painting\nRoom Remodeling\n\nIMPORTANT:\n\nA complementary project must be attached to a primary project.\n\nPRIMARY PROJECT = ✅\n\nCOMPLEMENTARY ONLY = ❌`,
+                    financing: `The program helps homeowners move forward with home improvement projects through available financing options.\n\nWe offer different financing options depending on the project and the homeowner.\n\nOptions may include cash, loans, credit cards, home equity, HELOCs, and other available options.\n\nThe specialist can explain the available options during the consultation.\n\nThe goal is simply to review the project and see what options may work for you.`,
+                    qualify: `I just have a few quick questions to make sure we're the right fit for your project and save you some time.\n\nAre you the homeowner?\n\nAre you the person making the decisions for this project?\n\nAre you the only homeowner and decision maker for the property?\n\nAre you the only person on the title or deed?\n\nAre you current on your mortgage?\n\nAre you current on your last three years property taxes?\n\nHave you had any bankruptcy in the last 7 years?\n\nAny foreclosure or lien on the property?\n\nWhat's your approximate credit score?\n\nIs it above 650?\n\nWhat's the best phone number to reach you?\n\nCREDIT SCORE:\n\nWhat's your approximate credit score?\n\n600s?\n700s?\n\nIs it above 650?`,
+                    appointment: `We have a couple of options available in your area.\n\nWould tomorrow morning or afternoon work better for you?\n\nPerfect.\n\nI have [TIME OPTION 1] or [TIME OPTION 2].\n\nWhich one works better for you?`,
+                    confirm: `Perfect. I have you scheduled for:\n\nPROJECT:\n[PROJECT]\n\nDATE:\n[DATE]\n\nTIME:\n[TIME]\n\nADDRESS:\n[ADDRESS]\n\nThe specialist will meet with you to go over the project and the available options.\n\nThe appointment will last about 60 minutes.\n\nOur team will call you about two hours before the appointment to confirm their ETA or let you know if there are any delays.\n\nIs this the best phone number to reach you?\n\nJust to make sure I have everything correct:\n\nProject: [PROJECT]\n\nDate: [DATE]\n\nTime: [TIME]\n\nAddress: [ADDRESS]\n\nIs everything correct?\n\nPerfect, you're all set.\n\nThank you for your time.`,
+                    expensive: `I completely understand.\n\nWe're not here to pressure you into making a decision today.\n\nThe goal is simply to understand the project, look at the available options, and see what may work for your situation.`,
+                    badTime: `I understand.\n\nThat's exactly why we can keep this simple and just take a quick look at what you're considering.\n\nThen you can decide what makes sense for you.`,
+                    talk: `Absolutely, I understand.\n\nIt makes sense to discuss a home improvement project before making any decision.\n\nWe can first go over the project and the available options so you have something specific to discuss.`,
+                    notInterested: `I completely understand.\n\nJust out of curiosity, is it because you're not considering any home improvements right now, or is there something specific about the project?`,
+                    quotes: `That makes complete sense.\n\nIt's always reasonable to compare your options.\n\nWe can simply provide another option for you to consider, and then you can decide what works best.`
+                }
+            },
+            es: {
+                labels: {
+                    intro: '1. Introducción + Curiosidad', discover: '2. Descubrir el Proyecto', financing: '3. Programa + Financiamiento',
+                    qualify: '4. Calificación', appointment: '5. Programar la Cita', confirm: '6. Confirmar + Cerrar',
+                    expensive: 'Muy Caro', badTime: 'No Es Buen Momento', talk: 'Necesito Hablarlo',
+                    notInterested: 'No Estoy Interesado', quotes: 'Quiero Más Cotizaciones'
+                },
+                sections: {
+                    intro: `Hola, ¿señor/señora [Apellido]?\n\nHola, mi nombre es [Nombre]. ¿Cómo está el día de hoy?\n\nLe estoy llamando porque actualmente estamos ayudando a propietarios en el área de la Bahía con proyectos de mejoras para el hogar.\n\nNoté que su propiedad en el código postal [ZIP] actualmente es elegible para nuestro programa de mejoras de eficiencia energética.\n\nNuestros especialistas ya están trabajando en su área, así que quería saber si ha estado pensando en algún proyecto de mejoras para su hogar.`,
+                    discover: `¿Qué parte de su casa le gustaría mejorar principalmente?\n\n¿Qué hizo que empezara a pensar en ese proyecto?\n\n¿Qué problema está teniendo actualmente con ese proyecto?\n\n¿Qué le gustaría lograr con el proyecto?\n\n¿Cuánto tiempo lleva considerándolo?\n\n¿Está pensando tener el proyecto terminado dentro de los próximos 6 meses?\n\nAdemás de eso, ¿está considerando algún otro proyecto importante?\n\nPROYECTOS PRINCIPALES:\n\nTecho\nVentanas y puertas\nHVAC / Aire acondicionado\nRemodelación de cocina\nRemodelación de baño\nPisos\nPaneles solares\nJardinería\n\nPROYECTOS COMPLEMENTARIOS:\n\nPavers\nFencing\nDriveway\nSiding\nPlumbing\nPintura interior\nPintura exterior\nRemodelación de habitaciones\n\nIMPORTANTE:\n\nUn proyecto complementario debe estar acompañado de un proyecto principal.\n\nPROYECTO PRINCIPAL = ✅\nSOLO COMPLEMENTARIO = ❌`,
+                    financing: `El programa ayuda a los propietarios a avanzar con proyectos de mejoras para el hogar mediante diferentes opciones de financiamiento.\n\nOfrecemos diferentes opciones dependiendo del proyecto y del propietario.\n\nLas opciones pueden incluir efectivo, préstamos, tarjetas de crédito, home equity, HELOC y otras opciones disponibles.\n\nEl especialista puede explicarle las opciones disponibles durante la consulta.\n\nLa idea simplemente es revisar el proyecto y ver qué opciones podrían funcionar para usted.`,
+                    qualify: `Solo tengo unas preguntas rápidas para asegurarme de que somos una buena opción para su proyecto y así ahorrarle tiempo.\n\n¿Usted es el propietario de la vivienda?\n\n¿Usted es la persona que toma las decisiones sobre este proyecto?\n\n¿Es usted el único propietario y tomador de decisiones de la propiedad?\n\n¿Es usted la única persona en el título o escritura?\n\n¿Está al día con su hipoteca?\n\n¿Está al día con los impuestos de propiedad de los últimos tres años?\n\n¿Ha tenido alguna bancarrota en los últimos 7 años?\n\n¿Tiene algún foreclosure o lien sobre la propiedad?\n\n¿Cuál es su puntaje de crédito aproximado?\n\n¿Está por encima de 650?\n\n¿Cuál es el mejor número para contactarlo?\n\nCREDIT SCORE:\n\n¿Cuál es su puntaje de crédito aproximado?\n\n¿Está en los 600?\n¿Está en los 700?\n\n¿Está por encima de 650?`,
+                    appointment: `Perfecto.\n\nTenemos un par de opciones disponibles en su área.\n\n¿Le funcionaría mejor mañana por la mañana o por la tarde?\n\nPerfecto.\n\nTengo disponible [OPCIÓN 1] o [OPCIÓN 2].\n\n¿Cuál le funciona mejor?\n\nPerfecto, lo tengo para [FECHA] a las [HORA].`,
+                    confirm: `Perfecto. Lo tengo programado para:\n\nPROYECTO:\n[PROYECTO]\n\nFECHA:\n[FECHA]\n\nHORA:\n[HORA]\n\nDIRECCIÓN:\n[DIRECCIÓN]\n\nEl especialista se reunirá con usted para revisar el proyecto y las opciones disponibles.\n\nLa cita durará aproximadamente 60 minutos.\n\nNuestro equipo le llamará aproximadamente dos horas antes de la cita para confirmar su hora estimada de llegada o informarle si existe algún retraso.\n\n¿Es este el mejor número para contactarlo?\n\nSolo para asegurarme de que tengo todo correctamente:\n\nProyecto: [PROYECTO]\n\nFecha: [FECHA]\n\nHora: [HORA]\n\nDirección: [DIRECCIÓN]\n\n¿Todo está correcto?\n\nPerfecto, ya está todo listo.\n\nMuchas gracias por su tiempo.`,
+                    expensive: `Lo entiendo perfectamente.\n\nNo estamos aquí para presionarlo a tomar una decisión hoy.\n\nLa idea simplemente es entender el proyecto, revisar las opciones disponibles y ver qué podría funcionar para su situación.`,
+                    badTime: `Lo entiendo.\n\nPrecisamente por eso podemos mantenerlo sencillo y simplemente revisar lo que está considerando.\n\nDespués usted puede decidir qué tiene sentido para usted.`,
+                    talk: `Claro, lo entiendo.\n\nTiene sentido hablar sobre un proyecto de mejoras antes de tomar una decisión.\n\nPrimero podemos revisar el proyecto y las opciones disponibles para que tenga información específica que pueda discutir.`,
+                    notInterested: `Lo entiendo perfectamente.\n\nSolo por curiosidad, ¿es porque actualmente no está considerando ninguna mejora para su hogar, o hay algo específico sobre el proyecto?`,
+                    quotes: `Tiene mucho sentido.\n\nSiempre es razonable comparar opciones.\n\nPodemos simplemente ofrecerle otra opción para que la considere y luego usted puede decidir qué le conviene más.`
+                }
+            }
+        };
+
+        let pageMode = 'miami';
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderSection(sectionKey) {
+            const currentData = scriptData[languageState.current];
+            const rawText = currentData.sections[sectionKey] || '';
+            document.getElementById('content').innerHTML = `<span class="subheading">${currentData.labels[sectionKey] || sectionKey}</span><span class="said-line">${escapeHtml(rawText)}</span>`;
+        }
+
+        function applyLanguage(lang) {
+            languageState.current = pageMode === 'california' ? 'en' : lang;
+            const toggle = document.getElementById('languageToggle');
+            const isCalifornia = pageMode === 'california';
+            toggle.hidden = isCalifornia;
+            toggle.style.display = isCalifornia ? 'none' : '';
+            toggle.setAttribute('aria-hidden', String(isCalifornia));
+            toggle.textContent = languageState.current === 'en' ? 'Español' : 'English';
+            toggle.dataset.langToggle = languageState.current === 'en' ? 'es' : 'en';
+
+            const mainButtons = document.querySelectorAll('#leftbar [data-section]');
+            const rebuttalButtons = document.querySelectorAll('#sidebar [data-section]');
+            const currentData = scriptData[languageState.current];
+
+            mainButtons.forEach(button => {
+                const key = button.dataset.miamiSection;
+                button.dataset.section = key;
+                button.hidden = key === 'unused';
+                button.textContent = currentData.labels[key] || key;
+            });
+
+            rebuttalButtons.forEach(button => {
+                const key = button.dataset.miamiSection;
+                button.dataset.section = key;
+                button.hidden = key === 'unused';
+                button.textContent = currentData.labels[key] || key;
+            });
+
+            const active = document.querySelector('[data-section].active:not([hidden])');
+            const firstButton = document.querySelector('#leftbar [data-section]:not([hidden])');
+            let selectedSection = active ? active.getAttribute('data-section') : firstButton.getAttribute('data-section');
+            renderSection(selectedSection);
+        }
+
+        document.querySelectorAll('[data-section]').forEach(button => {
+            button.dataset.miamiSection = button.dataset.section;
+        });
+
+        document.getElementById('pageToggle').addEventListener('click', () => {
+            pageMode = pageMode === 'miami' ? 'california' : 'miami';
+            document.querySelectorAll('[data-section]').forEach(button => button.classList.remove('active'));
+            document.getElementById('pageToggle').textContent = pageMode === 'miami' ? 'California' : 'Miami';
+            applyLanguage(languageState.current);
+        });
+
+        document.getElementById('languageToggle').addEventListener('click', () => {
+            const nextLang = document.getElementById('languageToggle').dataset.langToggle === 'es' ? 'es' : 'en';
+            applyLanguage(nextLang);
+        });
+
+        document.querySelectorAll('[data-section]').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('[data-section]').forEach(el => el.classList.remove('active'));
+                button.classList.add('active');
+                renderSection(button.getAttribute('data-section'));
+            });
+        });
+
+        applyLanguage('en');
+    </script>
+</body>
+
+</html>
